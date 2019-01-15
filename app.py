@@ -38,12 +38,16 @@ suggester = Suggester(dao, min_sim=0.5, n_suggestions=2, n_near_rows=2)
 @app.route('/corrections', methods=['GET'])
 def corrections():
     args = request.args.to_dict()
-    words = args.pop('query', None).lower().split(" ")
-    print("got words:", words)
-    suggestions = suggester.lookup_list(words)
-    print("sending suggestions:", suggestions)
+    words = args.pop('query', None)
+    if (words):
+        words=words.lower().split(" ")
+        print("got words:", words)
+        suggestions = suggester.lookup_list(words)
+        print("sending suggestions:", suggestions)
     
-    return json.dumps(suggestions, ensure_ascii=False)
+        return json.dumps(suggestions, ensure_ascii=False)
+    else:
+        return "{}"
 
 if __name__ == '__main__':
     #app.run(host='127.0.0.1', port=8080)
