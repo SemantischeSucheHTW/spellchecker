@@ -1,6 +1,6 @@
 from flask import Flask
 from flask import request
-from flask_cors import CORS, cross_origin
+from flask_cors import CORS
 
 from suggester.suggester import Suggester
 from dao.mongodbdao import MongoDBDao

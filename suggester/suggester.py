@@ -1,5 +1,6 @@
 import numpy as np
 from pyxdameraulevenshtein import normalized_damerau_levenshtein_distance, damerau_levenshtein_distance
+import textdistance
 
 class Suggester:
  
@@ -96,14 +97,27 @@ class Suggester:
         return self.lookup(input_string=input_string, \
                            sim_func=damerau_levenshtein_distance)
     
+    def damerau_levenshtein_python_lookup(self, input_string):
+        return self.lookup(input_string=input_string, \
+                           sim_func=textdistance.damerau_levenshtein.normalized_similarity)
     
     def highest_value_unique(similarities):
         return len(np.argwhere(np.array(similarities)==similarities[np.argmax(similarities)]).reshape(-1))==1
     
+    #def get_sim_func_from_method_str(method_str):
+        
+    
     #looks for similar words for the given wordlist
-    #corrections are only suggested, if the respective word needs a corrections (i.e. is written differently than in one of the documents)
-    #returns list of dicts {"word":"w1", "suggestions":["s1", "s2"]}
-    def lookup_list(self, wordlist):
+    #
+    #corrections are only suggested, if the respective word needs a corrections 
+    ##(i.e. is written differently than in one of the documents)
+    #
+    #if there is a best correction, only that one is returned
+    #
+    #returns list of dicts {"word":"wi", "suggestions":["s1", "s2", ...]}
+    def lookup_list(self, wordlist, method='normalized_damerau_levenshtein', keep_sims=False):
+        #sim_func = Suggester.get_sim_func_from_method_str(method)
+        
         #dict with: word->List((similarity, correction))
         results = []
         for word in wordlist:
@@ -112,7 +126,14 @@ class Suggester:
             if len(word) >= self.min_word_length:
                 
                 #lookup_res is a List((similarity, correction))
-                lookup_res = self.normalized_damerau_levenshtein_lookup(input_string=word)
+                if method is 'normalized_damerau_levenshtein':
+                    lookup_res = self.normalized_damerau_levenshtein_lookup(input_string=word)
+                elif method is 'damerau_levenshtein':
+                    lookup_res = self.damerau_levenshtein_lookup(input_string=word)
+                elif method is 'normalized_damerau_levenshtein_python':
+                    lookup_res = self.damerau_levenshtein_python_lookup(input_string=word)
+                else: 
+                    raise Exception("Given method to compute similarity not found!")
             
                 #only extend the dictionary when there is a result and the word needs to be corrected (i.e. the similarity is not 1)
                 if lookup_res and not (lookup_res[-1][0] == 1):
@@ -122,11 +143,18 @@ class Suggester:
                     #check whether the highest value is higher than all others -> if yes: only keep that one
                     similarities = [el[0] for el in lookup_res]
                     if Suggester.highest_value_unique(similarities):
-                        suggested_words.append(lookup_res[np.argmax(similarities)][1])
+                        if keep_sims:
+                            suggested_words.append(lookup_res[np.argmax(similarities)])
+                        else:
+                            #only keep the words
+                            suggested_words.append(lookup_res[np.argmax(similarities)][1])
                     else:
-                        #only keep the words
-                        for sim_word in lookup_res:
-                            suggested_words.append(sim_word[1])
+                        if keep_sims:
+                            suggested_words = lookup_res
+                        else:
+                            #only keep the words
+                            for sim_word in lookup_res:
+                                suggested_words.append(sim_word[1])
                     
                     
                     #write suggested words only in result

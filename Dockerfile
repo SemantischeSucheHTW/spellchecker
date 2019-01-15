@@ -1,6 +1,6 @@
 FROM python:3.7-stretch
 
-RUN pip install pymongo pyxDamerauLevenshtein Flask flask-cors
+RUN pip install pymongo Flask flask-cors pyxDamerauLevenshtein textdistance[extras]
 
 RUN mkdir /spellchecker
 WORKDIR /spellchecker
