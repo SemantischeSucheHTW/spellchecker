@@ -1,5 +1,6 @@
 from flask import Flask
 from flask import request
+from flask_cors import CORS, cross_origin
 
 from suggester.suggester import Suggester
 from dao.mongodbdao import MongoDBDao
@@ -14,6 +15,7 @@ def env(key):
     return value
 
 app = Flask(__name__)
+CORS(app)
 
 dao = MongoDBDao({
     "host": env("MONGODB_HOST"),
@@ -45,9 +47,11 @@ def corrections():
         suggestions = suggester.lookup_list(words)
         print("sending suggestions:", suggestions)
     
+        #json_response = "[" + json.dumps(suggestions, ensure_ascii=False)[1:-1] + "]"
+        #return json_response
         return json.dumps(suggestions, ensure_ascii=False)
     else:
-        return "{}"
+        return "[]"
 
 if __name__ == '__main__':
     #app.run(host='127.0.0.1', port=8080)

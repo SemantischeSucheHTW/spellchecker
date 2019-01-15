@@ -38,6 +38,7 @@ class Suggester:
 
         return offset_near_rows
     
+    #returns a list of [similarity, word]
     #returns an empty list, if there are no words similar enough
     def lookup(self, input_string, sim_func):
         n_letters = len(input_string)
@@ -95,28 +96,39 @@ class Suggester:
         return self.lookup(input_string=input_string, \
                            sim_func=damerau_levenshtein_distance)
     
+    
+    def highest_value_unique(similarities):
+        return len(np.argwhere(np.array(similarities)==similarities[np.argmax(similarities)]).reshape(-1))==1
+    
     #looks for similar words for the given wordlist
     #corrections are only suggested, if the respective word needs a corrections (i.e. is written differently than in one of the documents)
+    #returns list of dicts {"word":"w1", "suggestions":["s1", "s2"]}
     def lookup_list(self, wordlist):
         #dict with: word->List((similarity, correction))
-        results = {}
-        #print("SUGGESTOR GOT WORDLIST:", wordlist)
+        results = []
         for word in wordlist:
-            #print("LOOKING FOR SUGGESTIONS FOR WORD:", word)
             
             #the word needs to have a minimum length
             if len(word) >= self.min_word_length:
-            #res is a List((similarity, correction))
+                
+                #lookup_res is a List((similarity, correction))
                 lookup_res = self.normalized_damerau_levenshtein_lookup(input_string=word)
             
-                #only extend the dictionary when there is a result and the word needs to be corrected
+                #only extend the dictionary when there is a result and the word needs to be corrected (i.e. the similarity is not 1)
                 if lookup_res and not (lookup_res[-1][0] == 1):
                     
                     suggested_words = []
-                    #only keep the words
-                    for sim_word in lookup_res:
-                        suggested_words.append(sim_word[1])
-                        
+                    
+                    #check whether the highest value is higher than all others -> if yes: only keep that one
+                    similarities = [el[0] for el in lookup_res]
+                    if Suggester.highest_value_unique(similarities):
+                        suggested_words.append(lookup_res[np.argmax(similarities)][1])
+                    else:
+                        #only keep the words
+                        for sim_word in lookup_res:
+                            suggested_words.append(sim_word[1])
+                    
+                    
                     #write suggested words only in result
-                    results[word] = suggested_words
+                    results.append({"word":word, "suggestions":suggested_words})
         return results
